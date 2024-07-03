@@ -6,8 +6,8 @@
 Некоторыми из них стоит поделиться. 
 
 ## Содержание  <!-- omit from toc -->
-- [Project Structure](#структура-проекта)
-- [Async Routes](#async-routes)
+- [Структура проекта](#структура-проекта)
+- [Асинхронные маршруты](#асинхронные-маршруты)
   - [I/O Intensive Tasks](#io-intensive-tasks)
   - [CPU Intensive Tasks](#cpu-intensive-tasks)
 - [Pydantic](#pydantic)
@@ -90,41 +90,41 @@ fastapi-project
 ├── logging.ini
 └── alembic.ini
 ```
-1. Store all domain directories inside `src` folder
-   1. `src/` - highest level of an app, contains common models, configs, and constants, etc.
-   2. `src/main.py` - root of the project, which inits the FastAPI app
-2. Each package has its own router, schemas, models, etc.
-   1. `router.py` - is a core of each module with all the endpoints
-   2. `schemas.py` - for pydantic models
-   3. `models.py` - for db models
-   4. `service.py` - module specific business logic  
-   5. `dependencies.py` - router dependencies
-   6. `constants.py` - module specific constants and error codes
-   7. `config.py` - e.g. env vars
-   8. `utils.py` - non-business logic functions, e.g. response normalization, data enrichment, etc.
-   9. `exceptions.py` - module specific exceptions, e.g. `PostNotFound`, `InvalidUserData`
-3. When package requires services or dependencies or constants from other packages - import them with an explicit module name
+1. Храните все каталоги домена в папке `src`.
+   1. `src/` - самый верхний уровень приложения, содержит общие модели, конфиги, константы и т.д.
+   2. `src/main.py` - корень проекта, в котором запускается приложение FastAPI
+2. Каждый пакет имеет свой маршрутизатор, схемы, модели и т. д.
+   1. `router.py` - ядро каждого модуля со всеми конечными точками
+   2. `chemas.py` - для пидантичных моделей
+   3. `models.py` - для db-моделей
+   4. `service.py` - бизнес-логика, специфичная для модуля  
+   5. `dependencies.py` - зависимости маршрутизатора
+   6. `constants.py` - специфические для модуля константы и коды ошибок
+   7. `config.py` - например, env vars
+   8. `utils.py` - функции, не связанные с бизнес-логикой, например, нормализация ответов, обогащение данных и т. д.
+   9. `exceptions.py` - специфические для модуля исключения, например, `PostNotFound`, `InvalidUserData`.
+3. Если пакету требуются сервисы, зависимости или константы из других пакетов - импортируйте их с явным именем модуля
 ```python
 from src.auth import constants as auth_constants
 from src.notifications import service as notification_service
-from src.posts.constants import ErrorCode as PostsErrorCode  # in case we have Standard ErrorCode in constants module of each package
+from src.posts.constants import ErrorCode as PostsErrorCode  # если у нас есть стандартный ErrorCode в модуле constants каждого пакета
 ```
 
-## Async Routes
-FastAPI is an async framework, in the first place. It is designed to work with async I/O operations and that is the reason it is so fast. 
+## Асинхронные маршруты
+FastAPI - это, прежде всего, асинхронный фреймворк. Он предназначен для работы с асинхронными операциями ввода-вывода, и именно поэтому он такой быстрый. 
 
-However, FastAPI doesn't restrict you to use only `async` routes, and the developer can use `sync` routes as well. This might confuse beginner developers into believing that they are the same, but they are not.
+Однако FastAPI не ограничивает вас в использовании только `async` маршрутов, и разработчик может использовать и `синхронные` маршруты. Это может сбить с толку начинающих разработчиков, заставив их поверить, что это одно и то же, но это не так.
 
-### I/O Intensive Tasks
-Under the hood, FastAPI can [effectively handle](https://fastapi.tiangolo.com/async/#path-operation-functions) both async and sync I/O operations. 
-- FastAPI runs `sync` routes in the [threadpool](https://en.wikipedia.org/wiki/Thread_pool) 
-and blocking I/O operations won't stop the [event loop](https://docs.python.org/3/library/asyncio-eventloop.html) 
-from executing the tasks. 
-- If the route is defined `async` then it's called regularly via `await` 
-and FastAPI trusts you to do only non-blocking I/O operations.
+### Интенсивные задачи ввода-вывода
+Под капотом FastAPI может [эффективно обрабатывать](https://fastapi.tiangolo.com/async/#path-operation-functions) как асинхронные, так и синхронные операции ввода-вывода. 
+- FastAPI запускает `синхронные` маршруты в [пуле потоков](https://en.wikipedia.org/wiki/Thread_pool) 
+и блокирование операций ввода/вывода не остановит [цикл событий](https://docs.python.org/3/library/asyncio-eventloop.html) 
+от выполнения задач. 
+- Если маршрут определен `async`, то он регулярно вызывается через `await`. 
+и FastAPI доверяет вам выполнять только неблокирующие операции ввода-вывода.
 
-The caveat is if you fail that trust and execute blocking operations within async routes, 
-the event loop will not be able to run the next tasks until that blocking operation is done.
+Оговорка заключается в том, что если вы нарушите это доверие и выполните блокирующие операции внутри async-маршрутов, 
+цикл событий не сможет выполнять следующие задачи до тех пор, пока эта блокирующая операция не будет выполнена.
 ```python
 import asyncio
 import time

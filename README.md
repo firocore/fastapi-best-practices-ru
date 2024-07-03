@@ -5,7 +5,7 @@
 мы принимали хорошие и плохие решения, которые существенно повлияли на работу разработчиков.
 Некоторыми из них стоит поделиться. 
 
-## Contents  <!-- omit from toc -->
+## Содержание  <!-- omit from toc -->
 - [Project Structure](#project-structure)
 - [Async Routes](#async-routes)
   - [I/O Intensive Tasks](#io-intensive-tasks)
@@ -33,12 +33,12 @@
   - [Use ruff](#use-ruff)
 - [Bonus Section](#bonus-section)
 
-## Project Structure
-There are many ways to structure a project, but the best structure is one that is consistent, straightforward, and free of surprises.
+## Структура проекта
+Существует множество способов структурировать проект, но наилучшая структура - та, которая последовательна, понятна и не содержит сюрпризов.
 
-Many example projects and tutorials divide the project by file type (e.g., crud, routers, models), which works well for microservices or projects with fewer scopes. However, this approach didn't fit our monolith with many domains and modules.
+Многие примеры проектов и учебники разделяют проект по типу файлов (например, crud, routers, models), что хорошо подходит для микросервисов или проектов с небольшим количеством масштабов. Однако такой подход не подходил для нашего монолита с большим количеством доменов и модулей.
 
-The structure I found more scalable and evolvable for these cases is inspired by Netflix's [Dispatch](https://github.com/Netflix/dispatch), with some minor modifications.
+Структура, которую я счел более масштабируемой и эволюционирующей для этих случаев, вдохновлена [Dispatch] (https://github.com/Netflix/dispatch) компании Netflix, с некоторыми незначительными изменениями.
 ```
 fastapi-project
 ├── alembic/

@@ -1,9 +1,9 @@
-## FastAPI Best Practices <!-- omit from toc -->
-Opinionated list of best practices and conventions I use in startups.
+## Лучшие практики FastAPI <!-- omit from toc -->
+Список лучших практик и условностей, которые я использую в стартапах.
 
-For the last several years in production,
-we have been making good and bad decisions that impacted our developer experience dramatically.
-Some of them are worth sharing. 
+В течение последних нескольких лет в производстве
+мы принимали хорошие и плохие решения, которые существенно повлияли на работу разработчиков.
+Некоторыми из них стоит поделиться. 
 
 ## Contents  <!-- omit from toc -->
 - [Project Structure](#project-structure)

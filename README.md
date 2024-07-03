@@ -113,11 +113,11 @@ from src.posts.constants import ErrorCode as PostsErrorCode  # если у на�
 ## Асинхронные маршруты
 FastAPI - это, прежде всего, асинхронный фреймворк. Он предназначен для работы с асинхронными операциями ввода-вывода, и именно поэтому он такой быстрый. 
 
-Однако FastAPI не ограничивает вас в использовании только `async` маршрутов, и разработчик может использовать и `синхронные` маршруты. Это может сбить с толку начинающих разработчиков, заставив их поверить, что это одно и то же, но это не так.
+Однако FastAPI не ограничивает вас в использовании только `async` маршрутов, и разработчик может использовать и `sync` маршруты. Это может сбить с толку начинающих разработчиков, заставив их поверить, что это одно и то же, но это не так.
 
 ### Интенсивные задачи ввода-вывода
 Под капотом FastAPI может [эффективно обрабатывать](https://fastapi.tiangolo.com/async/#path-operation-functions) как асинхронные, так и синхронные операции ввода-вывода. 
-- FastAPI запускает `синхронные` маршруты в [пуле потоков](https://en.wikipedia.org/wiki/Thread_pool) 
+- FastAPI запускает `sync` маршруты в [пуле потоков](https://en.wikipedia.org/wiki/Thread_pool) 
 и блокирование операций ввода/вывода не остановит [цикл событий](https://docs.python.org/3/library/asyncio-eventloop.html) 
 от выполнения задач. 
 - Если маршрут определен `async`, то он регулярно вызывается через `await`. 
@@ -137,70 +137,70 @@ router = APIRouter()
 
 @router.get("/terrible-ping")
 async def terrible_ping():
-    time.sleep(10) # I/O blocking operation for 10 seconds, the whole process will be blocked
+    time.sleep(10) # Операция блокировки ввода/вывода в течение 10 секунд, весь процесс будет заблокирован
     
     return {"pong": True}
 
 @router.get("/good-ping")
 def good_ping():
-    time.sleep(10) # I/O blocking operation for 10 seconds, but in a separate thread for the whole `good_ping` route
+    time.sleep(10) # Операция блокировки ввода-вывода в течение 10 секунд, но в отдельном потоке для всего маршрута `good_ping`.
 
     return {"pong": True}
 
 @router.get("/perfect-ping")
 async def perfect_ping():
-    await asyncio.sleep(10) # non-blocking I/O operation
+    await asyncio.sleep(10) # неблокируемая операция ввода-вывода
 
     return {"pong": True}
 
 ```
-**What happens when we call:**
+**Что происходит, когда мы обращаемся к маршруту:**
 1. `GET /terrible-ping`
-   1. FastAPI server receives a request and starts handling it 
-   2. Server's event loop and all the tasks in the queue will be waiting until `time.sleep()` is finished
-      1. Server thinks `time.sleep()` is not an I/O task, so it waits until it is finished
-      2. Server won't accept any new requests while waiting
-   3. Server returns the response. 
-      1. After a response, server starts accepting new requests
+   1. Сервер FastAPI получает запрос и начинает его обрабатывать 
+   2. Цикл событий сервера и все задачи в очереди будут ждать, пока не завершится `time.sleep()`.
+      1. Сервер считает, что `time.sleep()` не является задачей ввода-вывода, поэтому ждет, пока она не завершится
+      2. Во время ожидания сервер не будет принимать новые запросы
+   3. Сервер возвращает ответ. 
+      1. После получения ответа сервер начинает принимать новые запросы
 2. `GET /good-ping`
-   1. FastAPI server receives a request and starts handling it
-   2. FastAPI sends the whole route `good_ping` to the threadpool, where a worker thread will run the function
-   3. While `good_ping` is being executed, event loop selects next tasks from the queue and works on them (e.g. accept new request, call db)
-      - Independently of main thread (i.e. our FastAPI app), 
-        worker thread will be waiting for `time.sleep` to finish.
-      - Sync operation blocks only the side thread, not the main one.
-   4. When `good_ping` finishes its work, server returns a response to the client
+   1. Сервер FastAPI получает запрос и начинает его обрабатывать
+   2. FastAPI отправляет весь маршрут `good_ping` в пул потоков, где рабочий поток будет выполнять функцию
+   3. Пока выполняется `good_ping`, цикл событий выбирает следующие задачи из очереди и работает над ними (например, принимает новый запрос, вызывает db).
+      - Независимо от основного потока (т.е. нашего приложения FastAPI), 
+        рабочий поток будет ожидать завершения `time.sleep`.
+      - Операция синхронизации блокирует только побочный поток, но не основной.
+   4. Когда `good_ping` завершает свою работу, сервер возвращает клиенту ответ
 3. `GET /perfect-ping`
-   1. FastAPI server receives a request and starts handling it
-   2. FastAPI awaits `asyncio.sleep(10)`
-   3. Event loop selects next tasks from the queue and works on them (e.g. accept new request, call db)
-   4. When `asyncio.sleep(10)` is done, servers finishes the execution of the route and returns a response to the client
+   1. Сервер FastAPI получает запрос и начинает его обрабатывать
+   2. FastAPI ожидает `asyncio.sleep(10)`.
+   3. Цикл событий выбирает следующие задачи из очереди и работает над ними (например, принимает новый запрос, вызывает db)
+   4. Когда `asyncio.sleep(10)` завершается, серверы заканчивают выполнение маршрута и возвращают ответ клиенту
 
 > [!WARNING]
-> Notes on the thread pool:
-> - Threads require more resources than coroutines, so they are not as cheap as async I/O operations.
-> - Thread pool has a limited number of threads, i.e. you might run out of threads and your app will become slow. [Read more](https://github.com/Kludex/fastapi-tips?tab=readme-ov-file#2-be-careful-with-non-async-functions) (external link)
+> Заметки о пуле потоков:
+> - Потоки требуют больше ресурсов, чем корутины, поэтому они не так дешевы, как асинхронные операции ввода-вывода.
+> - Пул потоков имеет ограниченное количество потоков, т.е. вы можете исчерпать их количество, и ваше приложение станет медленным. [Подробнее](https://github.com/Kludex/fastapi-tips?tab=readme-ov-file#2-be-careful-with-non-async-functions)(внешняя ссылка)
 
-### CPU Intensive Tasks
-The second caveat is that operations that are non-blocking awaitables or are sent to the thread pool must be I/O intensive tasks (e.g. open file, db call, external API call).
-- Awaiting CPU-intensive tasks (e.g. heavy calculations, data processing, video transcoding) is worthless since the CPU has to work to finish the tasks, 
-while I/O operations are external and server does nothing while waiting for that operations to finish, thus it can go to the next tasks.
-- Running CPU-intensive tasks in other threads also isn't effective, because of [GIL](https://realpython.com/python-gil/). 
-In short, GIL allows only one thread to work at a time, which makes it useless for CPU tasks. 
-- If you want to optimize CPU intensive tasks you should send them to workers in another process.
+### Задачи с интенсивным использованием процессора
+Вторая оговорка заключается в том, что операции, которые являются неблокирующими ожидаемыми или отправляются в пул потоков, должны быть задачами с интенсивным вводом-выводом (например, открытие файла, вызов базы данных, вызов внешнего API).
+- Ожидание задач, требовательных к процессору (например, тяжелые вычисления, обработка данных, перекодирование видео), бесполезно, так как процессор должен работать, чтобы завершить задачу, 
+В то время как операции ввода-вывода являются внешними, и сервер ничего не делает, ожидая завершения этих операций, и может перейти к следующим задачам.
+- Выполнение ресурсоемких задач процессора в других потоках также неэффективно из-за [GIL](https://realpython.com/python-gil/). 
+Короче говоря, GIL позволяет одновременно работать только одному потоку, что делает его бесполезным для задач ЦП. 
+- Если вы хотите оптимизировать задачи, требующие больших затрат процессора, вам следует отправить их на выполнение в другой процесс.
 
-**Related StackOverflow questions of confused users**
+**Связанные с StackOverflow вопросы запутавшихся пользователей**
 1. https://stackoverflow.com/questions/62976648/architecture-flask-vs-fastapi/70309597#70309597
-   - Here you can also check [my answer](https://stackoverflow.com/a/70309597/6927498)
+   - Здесь вы также можете проверить [мой ответ](https://stackoverflow.com/a/70309597/6927498)
 2. https://stackoverflow.com/questions/65342833/fastapi-uploadfile-is-slow-compared-to-flask
 3. https://stackoverflow.com/questions/71516140/fastapi-runs-api-calls-in-serial-instead-of-parallel-fashion
 
 ## Pydantic
-### Excessively use Pydantic
-Pydantic has a rich set of features to validate and transform data. 
+### Чрезмерное использование Pydantic
+Pydantic обладает богатым набором функций для проверки и преобразования данных. 
 
-In addition to regular features like required & non-required fields with default values, 
-Pydantic has built-in comprehensive data processing tools like regex, enums, strings manipulation, emails validation, etc.
+В дополнение к обычным функциям, таким как обязательные и необязательные поля со значениями по умолчанию, 
+Pydantic имеет встроенные инструменты обработки данных, такие как regex, перечисления, работа со строками, проверка писем и т. д.
 ```python
 from enum import Enum
 from pydantic import AnyUrl, BaseModel, EmailStr, Field
@@ -216,8 +216,8 @@ class UserBase(BaseModel):
     first_name: str = Field(min_length=1, max_length=128)
     username: str = Field(min_length=1, max_length=128, pattern="^[A-Za-z0-9-_]+$")
     email: EmailStr
-    age: int = Field(ge=18, default=None)  # must be greater or equal to 18
-    favorite_band: MusicBand | None = None  # only "AEROSMITH", "QUEEN", "AC/DC" values are allowed to be inputted
+    age: int = Field(ge=18, default=None)  # поле должно быть больше или равно 18
+    favorite_band: MusicBand | None = None  # разрешены только значения "AEROSMITH", "QUEEN", "AC/DC"
     website: AnyUrl | None = None
 ```
 ### Custom Base Model

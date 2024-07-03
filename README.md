@@ -6,7 +6,7 @@
 Некоторыми из них стоит поделиться. 
 
 ## Содержание  <!-- omit from toc -->
-- [Project Structure](#project-structure)
+- [Project Structure](#структура-проекта)
 - [Async Routes](#async-routes)
   - [I/O Intensive Tasks](#io-intensive-tasks)
   - [CPU Intensive Tasks](#cpu-intensive-tasks)
